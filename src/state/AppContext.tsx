@@ -229,19 +229,34 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     return [...GROUP_MATCHES, ...knockoutWithSlots];
   }, [knockoutSlots]);
 
-  const value: AppContextValue = {
-    results: state.results,
-    setScore,
-    resetAll,
-    allStandings,
-    thirdPlaceRanks,
-    knockoutSlots,
-    allMatches,
-    getTeamName,
-    getResult,
-    teamNames,
-    setTeamName,
-  };
+  const value: AppContextValue = useMemo(
+    () => ({
+      results: state.results,
+      setScore,
+      resetAll,
+      allStandings,
+      thirdPlaceRanks,
+      knockoutSlots,
+      allMatches,
+      getTeamName,
+      getResult,
+      teamNames,
+      setTeamName,
+    }),
+    [
+      state.results,
+      setScore,
+      resetAll,
+      allStandings,
+      thirdPlaceRanks,
+      knockoutSlots,
+      allMatches,
+      getTeamName,
+      getResult,
+      teamNames,
+      setTeamName,
+    ],
+  );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }
