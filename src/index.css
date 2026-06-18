@@ -1563,3 +1563,14 @@ tr {
 .match-card.group-J .match-group { background: rgba(168,85,247,0.15); color: #c084fc; }
 .match-card.group-K .match-group { background: rgba(217,70,239,0.15); color: #e879f9; }
 .match-card.group-L .match-group { background: rgba(236,72,153,0.15); color: #f472b6; }
+.match-group {
+    display: inline-block;
+    width: auto;
+    font-size: 0.6rem;
+    text-align: left;
+    padding: 0.1rem 0.4rem;
+    margin: 0;
+    background: var(--surface-hover);
+    border-radius: 2px;
+    letter-spacing: 0.03em;
+}
