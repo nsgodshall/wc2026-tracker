@@ -214,7 +214,7 @@ export default function MatchCard({
         </span>
         {showVenue && (
           <span className="match-venue">
-            {match.city} — {match.venue}
+            {match.venue}, {match.city}
           </span>
         )}
         {match.group && (
@@ -222,20 +222,21 @@ export default function MatchCard({
         )}
       </div>
       <div className="match-body">
-        <div
-          className={`team home clickable ${isPlaceholder ? "" : "has-score"}`}
+        <span
+          className="match-side home"
           onClick={incHome}
           onContextMenu={decHome}
-          title="Click team name +1 | Right-click −1"
+          title="Click +1 | Right-click −1"
         >
-          <span className="team-name">
-            {flagEmoji(homeTeam?.fifaCode ?? "")} {homeName}
+          {flagEmoji(homeTeam?.fifaCode ?? "")}
+          <span className="match-team-name">
+            {homeName}
             {homeTeam && (
               <span className="fifa-rank">({homeTeam.ranking})</span>
             )}
           </span>
-        </div>
-        <div className="match-score">
+        </span>
+        <span className="match-score">
           <input
             type="number"
             min="0"
@@ -257,20 +258,21 @@ export default function MatchCard({
             disabled={isPlaceholder}
             placeholder="-"
           />
-        </div>
-        <div
-          className={`team away clickable ${isPlaceholder ? "" : "has-score"}`}
+        </span>
+        <span
+          className="match-side away"
           onClick={incAway}
           onContextMenu={decAway}
-          title="Click team name +1 | Right-click −1"
+          title="Click +1 | Right-click −1"
         >
-          <span className="team-name">
-            {awayName} {flagEmoji(awayTeam?.fifaCode ?? "")}
+          <span className="match-team-name">
             {awayTeam && (
               <span className="fifa-rank">({awayTeam.ranking})</span>
             )}
+            {awayName}
           </span>
-        </div>
+          {flagEmoji(awayTeam?.fifaCode ?? "")}
+        </span>
       </div>
     </div>
   );

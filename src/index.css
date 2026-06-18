@@ -1486,3 +1486,33 @@ tr {
     gap: 0.5rem;
     flex: 1;
 }
+.match-side {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    min-width: 0;
+    cursor: pointer;
+    user-select: none;
+    transition: transform 0.1s;
+    padding: 0.1rem 0;
+}
+.match-side.home { justify-content: flex-end; text-align: right; }
+.match-side.away { justify-content: flex-start; text-align: left; }
+.match-side:hover { transform: scale(1.03); }
+.match-side:active { transform: scale(0.97); }
+
+.match-team-name {
+    font-weight: 500;
+    font-size: 0.82rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 110px;
+}
+
+.match-score {
+    display: flex;
+    align-items: center;
+    gap: 0.2rem;
+    flex-shrink: 0;
+}
