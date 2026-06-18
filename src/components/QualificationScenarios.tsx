@@ -18,45 +18,49 @@ export default function QualificationScenarios({ group }: Props) {
       const r = results.get(m.id);
       return r?.homeScore !== null && r?.awayScore !== null;
     });
-    const remaining = matches.filter((m) => {
-      const r = results.get(m.id);
-      return r?.homeScore === null || r?.awayScore === null;
-    });
-    if (played.length !== 2 || remaining.length !== 1) return null;
+    if (played.length === 0) return null;
 
-    const remMatch = remaining[0];
-    return TEAMS.filter((t) => t.group === group).map((team) => {
-      const isHome = remMatch.homeTeamId === team.id;
-      const outcomes: {
-        label: string;
-        pos: number;
-        qualifies: boolean;
-        third: boolean;
-      }[] = [];
+    return matches
+      .filter((m) => {
+        const r = results.get(m.id);
+        return r?.homeScore === null || r?.awayScore === null;
+      })
+      .map((remMatch) => {
+        return TEAMS.filter((t) => t.group === group).map((team) => {
+          const isHome = remMatch.homeTeamId === team.id;
+          const outcomes: {
+            label: string;
+            pos: number;
+            qualifies: boolean;
+            third: boolean;
+          }[] = [];
 
-      for (const [hs, as, lbl] of [
-        [1, 0, "Win"],
-        [0, 0, "Draw"],
-        [0, 1, "Lose"],
-      ] as const) {
-        const sim = new Map(results);
-        const id = remMatch.id;
-        if (isHome) sim.set(id, { matchId: id, homeScore: hs, awayScore: as });
-        else sim.set(id, { matchId: id, homeScore: as, awayScore: hs });
+          for (const [hs, as, lbl] of [
+            [1, 0, "Win"],
+            [0, 0, "Draw"],
+            [0, 1, "Lose"],
+          ] as const) {
+            const sim = new Map(results);
+            const id = remMatch.id;
+            if (isHome)
+              sim.set(id, { matchId: id, homeScore: hs, awayScore: as });
+            else sim.set(id, { matchId: id, homeScore: as, awayScore: hs });
 
-        const row = computeGroupStandings(group, sim).find(
-          (r) => r.teamId === team.id,
-        )!;
-        outcomes.push({
-          label: lbl,
-          pos: row.position,
-          qualifies: row.position <= 2,
-          third: row.position === 3,
+            const row = computeGroupStandings(group, sim).find(
+              (r) => r.teamId === team.id,
+            )!;
+            outcomes.push({
+              label: lbl,
+              pos: row.position,
+              qualifies: row.position <= 2,
+              third: row.position === 3,
+            });
+          }
+
+          return { teamId: team.id, outcomes, matchId: remMatch.id };
         });
-      }
-
-      return { teamId: team.id, outcomes };
-    });
+      })
+      .flat();
   }, [results, group]);
 
   if (!scenarios) return null;
