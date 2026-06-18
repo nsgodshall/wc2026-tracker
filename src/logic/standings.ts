@@ -149,6 +149,9 @@ function resolveH2H(
       else { home.pts += 1; away.pts += 1; }
     }
 
+    // Capture start index before sorting (tiedGroup is a contiguous block in standings)
+    const startIdx = standings.indexOf(tiedGroup[0]);
+
     // Reorder tiedGroup by h2h
     tiedGroup.sort((a, b) => {
       const ha = h2hRecords.get(a.teamId)!;
@@ -160,7 +163,6 @@ function resolveH2H(
     });
 
     // Write back into standings array at the correct indices
-    const startIdx = standings.indexOf(tiedGroup[0]);
     for (let i = 0; i < tiedGroup.length; i++) {
       standings[startIdx + i] = tiedGroup[i];
     }
