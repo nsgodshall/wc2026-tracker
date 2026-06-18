@@ -1586,3 +1586,73 @@ tr {
 .group-title.group-J { color: #c084fc; }
 .group-title.group-K { color: #e879f9; }
 .group-title.group-L { color: #f472b6; }
+
+/* --- Qualification Scenarios --- */
+.qual-scenarios {
+    margin-top: 1rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0.75rem 1rem;
+}
+
+.qs-title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 0.6rem;
+}
+
+.qs-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.3rem 0;
+    border-top: 1px solid var(--border);
+    font-size: 0.8rem;
+}
+
+.qs-row:first-of-type {
+    border-top: none;
+}
+
+.qs-team {
+    flex: 0 0 7rem;
+    font-weight: 500;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.qs-outcomes {
+    display: flex;
+    gap: 0.35rem;
+    flex-wrap: wrap;
+}
+
+.qs-badge {
+    display: inline-block;
+    padding: 0.15rem 0.45rem;
+    border-radius: 4px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.qs-in {
+    background: var(--accent-bg);
+    color: var(--accent);
+}
+
+.qs-third {
+    background: var(--warning-bg);
+    color: var(--warning);
+}
+
+.qs-out {
+    background: var(--danger-bg);
+    color: var(--danger);
+}

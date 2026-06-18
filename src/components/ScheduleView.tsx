@@ -3,6 +3,7 @@ import { GROUP_MATCHES } from "../data/schedule";
 import { ALL_GROUPS } from "../data/teams";
 import MatchCard from "./MatchCard";
 import GroupTable from "./GroupTable";
+import QualificationScenarios from "./QualificationScenarios";
 import type { GroupName } from "../data/types";
 
 export default function ScheduleView() {
@@ -110,6 +111,7 @@ export default function ScheduleView() {
         <div className="schedule-with-standings">
           <div className="schedule-standings-panel">
             <GroupTable group={selectedGroup} />
+            <QualificationScenarios group={selectedGroup} />
           </div>
           <div className="schedule-matches-panel">
             {sortedDates.map((date) => (
