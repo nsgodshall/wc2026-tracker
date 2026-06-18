@@ -32,7 +32,7 @@ export const GROUP_MATCHES: Match[] = [
     city: "Guadalajara",
     group: "A",
     round: "group",
-  }, // South Korea v Czech Rep
+  }, // South Africa v South Korea
 
   // Jun 12 – Groups B, D (hosts Canada & USA open)
   {
@@ -532,7 +532,7 @@ export const GROUP_MATCHES: Match[] = [
     city: "Mexico City",
     group: "A",
     round: "group",
-  }, // South Africa v Mexico
+  }, // Czech Rep v Mexico
   {
     id: "G50",
     homeTeamId: "A2",
@@ -542,7 +542,7 @@ export const GROUP_MATCHES: Match[] = [
     city: "Monterrey",
     group: "A",
     round: "group",
-  }, // South Korea v Czech Rep
+  }, // South Africa v South Korea
   {
     id: "G51",
     homeTeamId: "B4",
