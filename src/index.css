@@ -1529,3 +1529,25 @@ tr {
 .match-date { font-weight: 600; color: var(--text); }
 .match-venue { font-size: 0.62rem; }
 .match-group { font-size: 0.6rem; opacity: 0.7; }
+.match-group {
+    display: block;
+    font-size: 0.6rem;
+    color: var(--text-muted);
+    opacity: 0.8;
+    width: 100%;
+    padding: 0;
+    background: none;
+    border-radius: 0;
+}
+.match-group {
+    display: block;
+    width: 100%;
+    font-size: 0.6rem;
+    color: var(--text-muted);
+    text-align: center;
+    padding: 0.1rem 0;
+    margin: 0;
+    background: var(--surface-hover);
+    border-radius: 2px;
+    letter-spacing: 0.03em;
+}
