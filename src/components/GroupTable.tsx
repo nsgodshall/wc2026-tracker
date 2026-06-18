@@ -102,7 +102,7 @@ export default function GroupTable({ group }: Props) {
             <div
               key={row.teamId}
               ref={setRowRef(row.teamId)}
-              className={`gt-row ${isTop2 ? "qualified" : ""} ${isThird ? "third-place" : ""}`}
+              className={`gt-row ${isTop2 ? "qualified" : ""} ${isThird ? (thirdQualifies ? "third-qualifies" : "third-eliminated") : ""}`}
             >
               <span className="gt-col pos">
                 <span
@@ -171,7 +171,9 @@ export default function GroupTable({ group }: Props) {
       </div>
       <div className="qualification-legend">
         <span className="legend-dot qualified"></span> Qualify for R32 &nbsp;
-        <span className="legend-dot third-place"></span>
+        <span
+          className={`legend-dot ${thirdQualifies === undefined ? "third-place" : thirdQualifies ? "third-qualifies" : "third-eliminated"}`}
+        ></span>
         {thirdQualifies === undefined
           ? "May qualify (ranking undetermined)"
           : thirdQualifies

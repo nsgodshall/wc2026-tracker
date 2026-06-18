@@ -1414,3 +1414,14 @@ tr {
     border-radius: 2px;
     display: inline-block;
 }
+.gt-row.third-qualifies {
+    background: var(--warning-bg);
+    border-left: 3px solid var(--accent);
+}
+.gt-row.third-eliminated {
+    background: var(--danger-bg);
+    border-left: 3px solid var(--danger);
+    opacity: 0.7;
+}
+.qualification-legend .legend-dot.third-qualifies { background: var(--accent); }
+.qualification-legend .legend-dot.third-eliminated { background: var(--danger); }
