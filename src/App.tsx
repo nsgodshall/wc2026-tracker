@@ -4,7 +4,6 @@ import GroupTable from "./components/GroupTable";
 import ScheduleView from "./components/ScheduleView";
 import KnockoutBracket from "./components/KnockoutBracket";
 import ThirdPlaceRanking from "./components/ThirdPlaceRanking";
-import TeamEditor from "./components/TeamEditor";
 import { ALL_GROUPS, TEAMS } from "./data/teams";
 import FlagIcon from "./components/FlagIcon";
 
@@ -49,7 +48,6 @@ function AppContent() {
         <div className="header-top">
           <h1>⚽ 2026 FIFA World Cup Tracker</h1>
           <div className="header-actions">
-            <TeamEditor />
             <button className="btn-reset" onClick={resetAll}>
               Reset Scores
             </button>
