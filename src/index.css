@@ -1551,3 +1551,15 @@ tr {
     border-radius: 2px;
     letter-spacing: 0.03em;
 }
+.match-card.group-A .match-group { background: rgba(239,68,68,0.15); color: #f87171; }
+.match-card.group-B .match-group { background: rgba(249,115,22,0.15); color: #fb923c; }
+.match-card.group-C .match-group { background: rgba(245,158,11,0.15); color: #fbbf24; }
+.match-card.group-D .match-group { background: rgba(234,179,8,0.15); color: #facc15; }
+.match-card.group-E .match-group { background: rgba(34,197,94,0.15); color: #4ade80; }
+.match-card.group-F .match-group { background: rgba(20,184,166,0.15); color: #2dd4bf; }
+.match-card.group-G .match-group { background: rgba(6,182,212,0.15); color: #22d3ee; }
+.match-card.group-H .match-group { background: rgba(59,130,246,0.15); color: #60a5fa; }
+.match-card.group-I .match-group { background: rgba(99,102,241,0.15); color: #818cf8; }
+.match-card.group-J .match-group { background: rgba(168,85,247,0.15); color: #c084fc; }
+.match-card.group-K .match-group { background: rgba(217,70,239,0.15); color: #e879f9; }
+.match-card.group-L .match-group { background: rgba(236,72,153,0.15); color: #f472b6; }

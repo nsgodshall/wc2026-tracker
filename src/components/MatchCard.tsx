@@ -106,7 +106,9 @@ export default function MatchCard({
 
   if (compact) {
     return (
-      <div className={`match-card compact ${isKnockout ? "ko" : ""}`}>
+      <div
+        className={`match-card compact ${isKnockout ? "ko" : ""} ${match.group ? `group-${match.group}` : ""}`}
+      >
         {hasResult && (
           <button
             className="match-clear-btn"
@@ -182,7 +184,9 @@ export default function MatchCard({
   }
 
   return (
-    <div className={`match-card ${isKnockout ? "ko" : ""}`}>
+    <div
+      className={`match-card ${isKnockout ? "ko" : ""} ${match.group ? `group-${match.group}` : ""}`}
+    >
       {match.knockoutLabel && (
         <div className="match-label">{match.knockoutLabel}</div>
       )}
