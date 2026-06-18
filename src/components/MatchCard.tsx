@@ -93,11 +93,14 @@ export default function MatchCard({
     setScore(match.id, homeVal, Math.max(0, awayScore - 1));
   };
 
-  const dateStr = new Date(match.date).toLocaleDateString("en-US", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-  });
+  const dateStr = new Date(match.date + "T12:00:00").toLocaleDateString(
+    "en-US",
+    {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+    },
+  );
 
   const flagEmoji = (code: string) => <FlagIcon code={code} size={14} />;
 
