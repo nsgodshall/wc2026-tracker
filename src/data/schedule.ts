@@ -525,7 +525,7 @@ export const GROUP_MATCHES: Match[] = [
   // Jun 24 – Groups A, B, C
   {
     id: "G49",
-    homeTeamId: "A4",
+    homeTeamId: "A3",
     awayTeamId: "A1",
     date: "2026-06-24",
     venue: "Mexico City Stadium",
@@ -535,8 +535,8 @@ export const GROUP_MATCHES: Match[] = [
   }, // Czech Rep v Mexico
   {
     id: "G50",
-    homeTeamId: "A2",
-    awayTeamId: "A3",
+    homeTeamId: "A4",
+    awayTeamId: "A2",
     date: "2026-06-24",
     venue: "Estadio Monterrey",
     city: "Monterrey",
