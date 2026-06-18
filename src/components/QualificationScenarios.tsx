@@ -71,7 +71,7 @@ export default function QualificationScenarios({ group }: Props) {
       {scenarios.map((s) => {
         const t = TEAMS.find((x) => x.id === s.teamId)!;
         return (
-          <div key={s.teamId} className="qs-row">
+          <div key={`${s.teamId}-${s.matchId}`} className="qs-row">
             <span className="qs-team">{t.name}</span>
             <span className="qs-outcomes">
               {s.outcomes.map((o) => (
