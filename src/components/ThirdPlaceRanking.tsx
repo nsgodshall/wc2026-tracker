@@ -1,5 +1,6 @@
 import { useApp } from "../state/AppContext";
-import { getTeamById, getFlagUrl } from "../data/teams";
+import { getTeamById } from "../data/teams";
+import FlagIcon from "./FlagIcon";
 
 export default function ThirdPlaceRanking() {
   const { thirdPlaceRanks, getTeamName } = useApp();
@@ -49,12 +50,9 @@ export default function ThirdPlaceRanking() {
             >
               <td>{tpr.rank}</td>
               <td className="team-name-cell">
-                <img
-                  src={getFlagUrl(getTeamById(tpr.teamId)?.fifaCode ?? "")}
-                  alt=""
-                  className="flag-icon"
-                  width="20"
-                  height="14"
+                <FlagIcon
+                  code={getTeamById(tpr.teamId)?.fifaCode ?? ""}
+                  size={14}
                 />
                 {getTeamName(tpr.teamId)}
               </td>

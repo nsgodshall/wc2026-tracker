@@ -2,6 +2,7 @@ import React from "react";
 import { useApp } from "../state/AppContext";
 import { KNOCKOUT_MATCHES, ROUND_NAMES } from "../data/knockout";
 import { getTeamById } from "../data/teams";
+import FlagIcon from "./FlagIcon";
 import { useMemo, useCallback } from "react";
 import type { KnockoutSlot, MatchResult } from "../data/types";
 
@@ -102,14 +103,7 @@ function BracketNode({
   const as = result?.awayScore ?? 0;
   const played = result?.homeScore !== null && result?.awayScore !== null;
 
-  const flag = (code: string) => {
-    if (!code) return <span className="bt-flag bt-flag-empty" />;
-    if (code === "gb-eng") return <span className="bt-flag">🏴󠁧󠁢󠁥󠁮󠁧󠁿</span>;
-    if (code === "gb-sct") return <span className="bt-flag">🏴󠁧󠁢󠁳󠁣󠁴󠁿</span>;
-    const a = code.toUpperCase().charCodeAt(0) - 65 + 0x1f1e6;
-    const b = code.toUpperCase().charCodeAt(1) - 65 + 0x1f1e6;
-    return <span className="bt-flag">{String.fromCodePoint(a, b)}</span>;
-  };
+  const flag = (code: string) => <FlagIcon code={code} size={16} />;
 
   const short = (team: typeof homeTeam, slot: KnockoutSlot) => {
     if (team) {

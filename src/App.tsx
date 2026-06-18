@@ -6,6 +6,7 @@ import KnockoutBracket from "./components/KnockoutBracket";
 import ThirdPlaceRanking from "./components/ThirdPlaceRanking";
 import TeamEditor from "./components/TeamEditor";
 import { ALL_GROUPS, TEAMS } from "./data/teams";
+import FlagIcon from "./components/FlagIcon";
 
 type Tab = "standings" | "schedule" | "third-place" | "knockout";
 
@@ -39,16 +40,7 @@ function AppContent() {
 
   const flag = (teamId: string) => {
     const t = TEAMS.find((x) => x.id === teamId);
-    if (!t?.fifaCode) return null;
-    return (
-      <img
-        src={`https://flagcdn.com/w40/${t.fifaCode}.png`}
-        alt=""
-        className="htm-flag"
-        width="20"
-        height="14"
-      />
-    );
+    return <FlagIcon code={t?.fifaCode ?? ""} size={14} />;
   };
 
   return (

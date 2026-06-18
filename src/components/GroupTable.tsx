@@ -2,6 +2,7 @@ import { useRef, useLayoutEffect } from "react";
 import type { GroupName, GroupStanding } from "../data/types";
 import { useApp } from "../state/AppContext";
 import { getTeamById } from "../data/teams";
+import FlagIcon from "./FlagIcon";
 import { usePrevious } from "../state/usePrevious";
 
 interface Props {
@@ -113,22 +114,10 @@ export default function GroupTable({ group }: Props) {
                 {movedDown && <span className="pos-arrow down">▼</span>}
               </span>
               <span className="gt-col team">
-                {(() => {
-                  const t = getTeamById(row.teamId);
-                  const code = t?.fifaCode ?? "";
-                  if (!code) return null;
-                  if (code === "gb-eng")
-                    return <span className="flag-emoji">🏴󠁧󠁢󠁥󠁮󠁧󠁿</span>;
-                  if (code === "gb-sct")
-                    return <span className="flag-emoji">🏴󠁧󠁢󠁳󠁣󠁴󠁿</span>;
-                  const a = code.toUpperCase().charCodeAt(0) - 65 + 0x1f1e6;
-                  const b = code.toUpperCase().charCodeAt(1) - 65 + 0x1f1e6;
-                  return (
-                    <span className="flag-emoji">
-                      {String.fromCodePoint(a, b)}
-                    </span>
-                  );
-                })()}
+                <FlagIcon
+                  code={getTeamById(row.teamId)?.fifaCode ?? ""}
+                  size={13}
+                />
                 {getTeamName(row.teamId)}
                 <span className="fifa-rank">
                   ({getTeamById(row.teamId)?.ranking})

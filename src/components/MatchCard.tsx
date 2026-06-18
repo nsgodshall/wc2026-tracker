@@ -2,6 +2,7 @@ import React from "react";
 import type { Match } from "../data/types";
 import { useApp } from "../state/AppContext";
 import { getTeamById } from "../data/teams";
+import FlagIcon from "./FlagIcon";
 
 interface Props {
   match: Match;
@@ -98,14 +99,7 @@ export default function MatchCard({
     day: "numeric",
   });
 
-  const flagEmoji = (code: string) => {
-    if (!code) return null;
-    if (code === "gb-eng") return <span className="flag-emoji">🏴󠁧󠁢󠁥󠁮󠁧󠁿</span>;
-    if (code === "gb-sct") return <span className="flag-emoji">🏴󠁧󠁢󠁳󠁣󠁴󠁿</span>;
-    const a = code.toUpperCase().charCodeAt(0) - 65 + 0x1f1e6;
-    const b = code.toUpperCase().charCodeAt(1) - 65 + 0x1f1e6;
-    return <span className="flag-emoji">{String.fromCodePoint(a, b)}</span>;
-  };
+  const flagEmoji = (code: string) => <FlagIcon code={code} size={14} />;
 
   if (compact) {
     return (

@@ -104,18 +104,9 @@ export function getTeamById(id: string): Team | undefined {
   return TEAMS.find((t) => t.id === id);
 }
 
-/** Return a flagcdn URL for a team's ISO code, or empty. */
+/** Return a flagcdn URL for a team's ISO code. */
 export function getFlagUrl(fifaCode: string): string {
   if (!fifaCode || fifaCode.length < 2) return "";
-  return `https://flagcdn.com/w40/${fifaCode}.png`;
-}
-
-/** Convert an ISO 3166-1 alpha-2 code to an emoji flag. */
-export function getFlagEmoji(fifaCode: string): string {
-  if (fifaCode === "gb-eng") return "🏴󠁧󠁢󠁥󠁮󠁧󠁿";
-  if (fifaCode === "gb-sct") return "🏴󠁧󠁢󠁳󠁣󠁴󠁿";
-  if (!fifaCode || fifaCode.length !== 2) return "";
-  const a = fifaCode.toUpperCase().charCodeAt(0) - 65 + 0x1f1e6;
-  const b = fifaCode.toUpperCase().charCodeAt(1) - 65 + 0x1f1e6;
-  return String.fromCodePoint(a, b);
+  // Use w80 for crisp 2x rendering
+  return `https://flagcdn.com/w80/${fifaCode}.png`;
 }
