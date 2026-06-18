@@ -105,13 +105,13 @@ function BracketNode({
 
   const flag = (code: string) => <FlagIcon code={code} size={16} />;
 
-  const short = (team: typeof homeTeam, slot: KnockoutSlot) => {
+  const short = (team: typeof homeTeam) => {
     if (team) {
       if (team.fifaCode === "gb-eng") return "ENG";
       if (team.fifaCode === "gb-sct") return "SCO";
       return team.fifaCode.toUpperCase();
     }
-    return slot?.label?.slice(0, 3) ?? "—";
+    return "";
   };
 
   return (
@@ -157,7 +157,7 @@ function BracketNode({
           disabled={isPlaceholder}
         >
           {flag(homeTeam?.fifaCode ?? "")}
-          <span className="bt-code">{short(homeTeam, homeSlot)}</span>
+          <span className="bt-code">{short(homeTeam)}</span>
         </button>
         <span className="bt-score">
           <span className="bt-s">{result?.homeScore ?? "–"}</span>
@@ -176,7 +176,7 @@ function BracketNode({
           title="Click +1 | Right-click −1"
           disabled={isPlaceholder}
         >
-          <span className="bt-code">{short(awayTeam, awaySlot)}</span>
+          <span className="bt-code">{short(awayTeam)}</span>
           {flag(awayTeam?.fifaCode ?? "")}
         </button>
       </div>

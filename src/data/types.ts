@@ -25,6 +25,7 @@ export interface Match {
   homeTeamId: string;
   awayTeamId: string;
   date: string;
+  time?: string; // kickoff time e.g. "13:00"
   venue: string;
   city: string;
   group?: GroupName;

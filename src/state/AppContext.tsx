@@ -220,6 +220,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         homeTeamId: hSlot?.teamId ?? `slot_${km.homeSlotIndex}`,
         awayTeamId: aSlot?.teamId ?? `slot_${km.awaySlotIndex}`,
         date: km.date,
+        time: undefined,
         venue: km.venue,
         city: km.city,
         round: km.round,

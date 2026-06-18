@@ -208,7 +208,10 @@ export default function MatchCard({
         </button>
       )}
       <div className="match-header">
-        <span className="match-date">{dateStr}</span>
+        <span className="match-date">
+          {dateStr}
+          {match.time ? ` ${match.time}` : ""}
+        </span>
         {showVenue && (
           <span className="match-venue">
             {match.city} — {match.venue}
