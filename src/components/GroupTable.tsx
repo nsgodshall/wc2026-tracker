@@ -77,7 +77,7 @@ export default function GroupTable({ group }: Props) {
 
   return (
     <div className="group-table-wrapper">
-      <h3 className="group-title">Group {group}</h3>
+      <h3 className={`group-title group-${group}`}>Group {group}</h3>
       <div className="group-table-grid">
         <div className="gt-header">
           <span className="gt-col pos">#</span>
