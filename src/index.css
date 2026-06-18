@@ -1425,3 +1425,33 @@ tr {
 }
 .qualification-legend .legend-dot.third-qualifies { background: var(--accent); }
 .qualification-legend .legend-dot.third-eliminated { background: var(--danger); }
+.date-jump-bar {
+    display: flex;
+    gap: 0.2rem;
+    flex-wrap: wrap;
+    margin-top: 0.4rem;
+}
+.date-chip {
+    padding: 0.15rem 0.45rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 0.68rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+}
+.date-chip:hover { color: var(--text); background: var(--surface-hover); }
+.date-chip.active {
+    background: var(--blue);
+    color: #fff;
+    border-color: var(--blue);
+    font-weight: 600;
+}
+.filter-sep {
+    width: 1px;
+    background: var(--border);
+    margin: 0 0.2rem;
+    align-self: stretch;
+}
