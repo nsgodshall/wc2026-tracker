@@ -102,18 +102,14 @@ function BracketNode({
   const as = result?.awayScore ?? 0;
   const played = result?.homeScore !== null && result?.awayScore !== null;
 
-  const flag = (code: string) =>
-    code ? (
-      <img
-        src={`https://flagcdn.com/w40/${code}.png`}
-        alt=""
-        className="bt-flag"
-        width="22"
-        height="15"
-      />
-    ) : (
-      <span className="bt-flag bt-flag-empty" />
-    );
+  const flag = (code: string) => {
+    if (!code) return <span className="bt-flag bt-flag-empty" />;
+    if (code === "gb-eng") return <span className="bt-flag">🏴󠁧󠁢󠁥󠁮󠁧󠁿</span>;
+    if (code === "gb-sct") return <span className="bt-flag">🏴󠁧󠁢󠁳󠁣󠁴󠁿</span>;
+    const a = code.toUpperCase().charCodeAt(0) - 65 + 0x1f1e6;
+    const b = code.toUpperCase().charCodeAt(1) - 65 + 0x1f1e6;
+    return <span className="bt-flag">{String.fromCodePoint(a, b)}</span>;
+  };
 
   const short = (team: typeof homeTeam, slot: KnockoutSlot) => {
     if (team) {
