@@ -10,7 +10,10 @@ interface Props {
   group: GroupName;
 }
 
-const STATUS_PILL: Record<OutlookStatus, { label: string; cls: string } | null> = {
+const STATUS_PILL: Record<
+  OutlookStatus,
+  { label: string; cls: string } | null
+> = {
   "won-group": { label: "Won", cls: "qs-in" },
   "clinched-top2": { label: "Through", cls: "qs-in" },
   alive: null, // no pill — the default, undecided state
@@ -102,7 +105,7 @@ export default function GroupTable({ group }: Props) {
         <div className="gt-header">
           <span className="gt-col pos">#</span>
           <span className="gt-col team">Team</span>
-          <span className="gt-col">P</span>
+          <span className="gt-col">GP</span>
           <span className="gt-col">W</span>
           <span className="gt-col">D</span>
           <span className="gt-col">L</span>
@@ -143,9 +146,12 @@ export default function GroupTable({ group }: Props) {
                   ({getTeamById(row.teamId)?.ranking})
                 </span>
                 {(() => {
-                  const pill = STATUS_PILL[statusByTeam.get(row.teamId) ?? "alive"];
+                  const pill =
+                    STATUS_PILL[statusByTeam.get(row.teamId) ?? "alive"];
                   return pill ? (
-                    <span className={`gt-status ${pill.cls}`}>{pill.label}</span>
+                    <span className={`gt-status ${pill.cls}`}>
+                      {pill.label}
+                    </span>
                   ) : null;
                 })()}
               </span>

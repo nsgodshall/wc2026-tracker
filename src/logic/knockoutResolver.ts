@@ -6,7 +6,9 @@ import type {
 } from "../data/types";
 import { TEAMS, ALL_GROUPS } from "../data/teams";
 import { KNOCKOUT_SLOTS, KNOCKOUT_MATCHES } from "../data/knockout";
+import { GROUP_MATCHES } from "../data/schedule";
 import { computeGroupStandings } from "../logic/standings";
+import { computeGroupOutlook } from "../logic/scenarios";
 import {
   computeThirdPlaceRanking,
   assignThirdPlaceSlots,
@@ -25,6 +27,23 @@ function parseThirdPlaceGroups(label: string): GroupName[] {
 
 const getName = (id: string) => TEAMS.find((t) => t.id === id)?.name ?? id;
 
+function lockedGroupSlots(
+  group: GroupName,
+  results: Map<string, MatchResult>,
+): { first: string | null; second: string | null } {
+  const outlook = computeGroupOutlook(group, results, getName);
+  let first: string | null = null;
+  let second: string | null = null;
+
+  for (const team of outlook.teams) {
+    if (team.tiebreakUndecided) continue;
+    if (team.minPosition === 1 && team.maxPosition === 1) first = team.teamId;
+    if (team.minPosition === 2 && team.maxPosition === 2) second = team.teamId;
+  }
+
+  return { first, second };
+}
+
 /** Fixed bracket progression: R32→R16, R16→QF, QF→SF, SF→Final/3rd */
 const R32_TO_SLOT = [
   34, 32, 35, 36, 33, 37, 38, 39, 42, 43, 40, 41, 46, 44, 47, 45,
@@ -41,14 +60,10 @@ export function resolveKnockoutBracket(results: Map<string, MatchResult>): {
     allStandings.set(g, computeGroupStandings(g, results));
 
   const thirdPlaceRanks = computeThirdPlaceRanking(allStandings);
-
-  // Third-place slot assignments
-  const mapping: { koSlotIndex: number; candidateGroups: GroupName[] }[] = [];
-  for (let i = 0; i < KNOCKOUT_SLOTS.length; i++) {
-    const gs = parseThirdPlaceGroups(KNOCKOUT_SLOTS[i].label);
-    if (gs.length > 0) mapping.push({ koSlotIndex: i, candidateGroups: gs });
-  }
-  const tpa = assignThirdPlaceSlots(thirdPlaceRanks, mapping);
+  const allGroupMatchesPlayed = GROUP_MATCHES.every((m) => {
+    const r = results.get(m.id);
+    return !!r && r.homeScore !== null && r.awayScore !== null;
+  });
 
   const slots: KnockoutSlot[] = KNOCKOUT_SLOTS.map((s) => ({
     ...s,
@@ -65,28 +80,47 @@ export function resolveKnockoutBracket(results: Map<string, MatchResult>): {
     });
   }
 
-  for (const a of tpa) {
-    if (a.assignedTeamId) {
-      slots[a.koSlotIndex].teamId = a.assignedTeamId;
-      slots[a.koSlotIndex].teamName = getName(a.assignedTeamId);
+  // Fill only mathematically locked group winners/runners-up into R32 slots.
+  // A team that has merely clinched top 2 is not shown until its exact 1st/2nd
+  // slot is locked.
+  const lockedSlots = new Map<
+    GroupName,
+    { first: string | null; second: string | null }
+  >();
+  for (const group of ALL_GROUPS) {
+    lockedSlots.set(group, lockedGroupSlots(group, results));
+  }
+
+  for (let i = 0; i < 32; i++) {
+    const label = slots[i].label;
+    if (label[0] === "1" && label.length === 2) {
+      const teamId = lockedSlots.get(label[1] as GroupName)?.first;
+      if (teamId) {
+        slots[i].teamId = teamId;
+        slots[i].teamName = getName(teamId);
+      }
+    } else if (label[0] === "2" && label.length === 2) {
+      const teamId = lockedSlots.get(label[1] as GroupName)?.second;
+      if (teamId) {
+        slots[i].teamId = teamId;
+        slots[i].teamName = getName(teamId);
+      }
     }
   }
 
-  // Fill group qualifiers into R32 slots (0–31)
-  for (let i = 0; i < 32; i++) {
-    if (slots[i].teamId) continue;
-    const label = slots[i].label;
-    if (label[0] === "1" && label.length === 2) {
-      const s = allStandings.get(label[1] as GroupName);
-      if (s?.length) {
-        slots[i].teamId = s[0].teamId;
-        slots[i].teamName = getName(s[0].teamId);
-      }
-    } else if (label[0] === "2" && label.length === 2) {
-      const s = allStandings.get(label[1] as GroupName);
-      if (s && s.length > 1) {
-        slots[i].teamId = s[1].teamId;
-        slots[i].teamName = getName(s[1].teamId);
+  // Third-place assignments are only displayed once the group stage is complete.
+  // Before then, the ranking is a projection/snapshot, not a clinch.
+  if (allGroupMatchesPlayed) {
+    const mapping: { koSlotIndex: number; candidateGroups: GroupName[] }[] = [];
+    for (let i = 0; i < KNOCKOUT_SLOTS.length; i++) {
+      const gs = parseThirdPlaceGroups(KNOCKOUT_SLOTS[i].label);
+      if (gs.length > 0) mapping.push({ koSlotIndex: i, candidateGroups: gs });
+    }
+    const tpa = assignThirdPlaceSlots(thirdPlaceRanks, mapping);
+    for (const a of tpa) {
+      if (a.assignedTeamId) {
+        slots[a.koSlotIndex].teamId = a.assignedTeamId;
+        slots[a.koSlotIndex].teamName = getName(a.assignedTeamId);
       }
     }
   }

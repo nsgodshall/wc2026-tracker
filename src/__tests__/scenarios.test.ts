@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { computeGroupOutlook, type TeamOutlook } from "../logic/scenarios";
+import {
+  computeGroupOutlook,
+  getTeamClinchInfo,
+  type TeamOutlook,
+} from "../logic/scenarios";
 import { getTeamById } from "../data/teams";
 import type { GroupName, GroupStanding, MatchResult } from "../data/types";
 
@@ -8,7 +12,11 @@ function resultsMap(
 ): Map<string, MatchResult> {
   const map = new Map<string, MatchResult>();
   for (const r of results) {
-    map.set(r.matchId, { matchId: r.matchId, homeScore: r.homeScore, awayScore: r.awayScore });
+    map.set(r.matchId, {
+      matchId: r.matchId,
+      homeScore: r.homeScore,
+      awayScore: r.awayScore,
+    });
   }
   return map;
 }
@@ -16,8 +24,22 @@ function resultsMap(
 const nameOf = (id: string) => getTeamById(id)?.name ?? id;
 
 /** Fabricate an allStandings map where every other group's 3rd has `thirdPts`. */
-function standingsWithThirds(thirdPts: number): Map<GroupName, GroupStanding[]> {
-  const groups: GroupName[] = ["B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"];
+function standingsWithThirds(
+  thirdPts: number,
+): Map<GroupName, GroupStanding[]> {
+  const groups: GroupName[] = [
+    "B",
+    "C",
+    "D",
+    "E",
+    "F",
+    "G",
+    "H",
+    "I",
+    "J",
+    "K",
+    "L",
+  ];
   const row = (points: number): GroupStanding => ({
     teamId: "x",
     position: 3,
@@ -36,7 +58,10 @@ function standingsWithThirds(thirdPts: number): Map<GroupName, GroupStanding[]> 
   return map;
 }
 
-function team(outlook: ReturnType<typeof computeGroupOutlook>, id: string): TeamOutlook {
+function team(
+  outlook: ReturnType<typeof computeGroupOutlook>,
+  id: string,
+): TeamOutlook {
   return outlook.teams.find((t) => t.teamId === id)!;
 }
 
@@ -63,9 +88,21 @@ describe("computeGroupOutlook — status classification", () => {
     expect(team(outlook, "A4").status).toBe("alive");
 
     // A clinched team's every remaining result still guarantees top 2.
-    for (const r of team(outlook, "A1").ownResults) {
+    const a1 = team(outlook, "A1");
+    for (const r of a1.ownResults) {
       expect(r.verdict).toBe("guarantees");
     }
+
+    // Clinched top-2 teams still get explicit 1st/2nd placement scenarios.
+    expect(a1.placementResults).toHaveLength(3);
+    expect(a1.placementResults.find((r) => r.result === "win")).toMatchObject({
+      minPosition: 1,
+      maxPosition: 1,
+    });
+    expect(a1.placementResults.find((r) => r.result === "loss")).toMatchObject({
+      minPosition: 2,
+      maxPosition: 2,
+    });
 
     // A2 can only reach 3rd: verdicts are about top-3, and winning gets it there.
     const a2 = team(outlook, "A2");
@@ -73,7 +110,9 @@ describe("computeGroupOutlook — status classification", () => {
     const a2Win = a2.ownResults.find((r) => r.result === "win")!;
     expect(a2Win.target).toBe("top3");
     expect(a2Win.verdict).toBe("guarantees");
-    expect(a2.ownResults.find((r) => r.result === "loss")!.verdict).toBe("impossible");
+    expect(a2.ownResults.find((r) => r.result === "loss")!.verdict).toBe(
+      "impossible",
+    );
   });
 
   it("marks a dominant leader as having won the group", () => {
@@ -89,6 +128,7 @@ describe("computeGroupOutlook — status classification", () => {
 
     expect(team(outlook, "A1").status).toBe("won-group");
     expect(team(outlook, "A1").remainingForTeam).toBe(1);
+    expect(team(outlook, "A1").placementResults).toHaveLength(0);
     for (const r of team(outlook, "A1").ownResults) {
       expect(r.verdict).toBe("guarantees");
     }
@@ -117,8 +157,11 @@ describe("computeGroupOutlook — final-day scenarios", () => {
 
     expect(win.verdict).toBe("guarantees"); // away win mapped correctly
     expect(loss.verdict).toBe("impossible");
+    expect(loss.thirdPlaceVerdict).toBe("possible");
     expect(draw.verdict).toBe("possible");
-    expect(draw.marginText).toBe("Safe unless Czech Republic beat Mexico by 2+");
+    expect(draw.marginText).toBe(
+      "Safe unless Czech Republic beat Mexico by 2+",
+    );
   });
 });
 
@@ -140,8 +183,12 @@ describe("computeGroupOutlook — undecided tiebreaks", () => {
     expect(team(outlook, "A3").tiebreakUndecided).toBe(false);
 
     // All matches played: both are top-2, none "alive".
-    expect(["won-group", "clinched-top2"]).toContain(team(outlook, "A1").status);
-    expect(["won-group", "clinched-top2"]).toContain(team(outlook, "A2").status);
+    expect(["won-group", "clinched-top2"]).toContain(
+      team(outlook, "A1").status,
+    );
+    expect(["won-group", "clinched-top2"]).toContain(
+      team(outlook, "A2").status,
+    );
     expect(team(outlook, "A1").ownResults).toHaveLength(0);
   });
 });
@@ -156,21 +203,34 @@ describe("computeGroupOutlook — third place", () => {
   ]);
 
   it("reports the 3rd-place points range", () => {
-    const a2 = team(computeGroupOutlook("A", results, nameOf), "A2").thirdPlace!;
+    const a2 = team(
+      computeGroupOutlook("A", results, nameOf),
+      "A2",
+    ).thirdPlace!;
     expect(a2.minPoints).toBe(1);
     expect(a2.maxPoints).toBe(3);
     expect(a2.estimate).toBeUndefined(); // no allStandings passed
   });
 
   it("estimates 'qualifies' when other groups' thirds are weak", () => {
-    const outlook = computeGroupOutlook("A", results, nameOf, standingsWithThirds(0));
+    const outlook = computeGroupOutlook(
+      "A",
+      results,
+      nameOf,
+      standingsWithThirds(0),
+    );
     const a2 = team(outlook, "A2").thirdPlace!;
     expect(a2.estimate).toBe("qualifies");
     expect(a2.cutLinePoints).toBe(0);
   });
 
   it("estimates 'eliminated' when other groups' thirds are strong", () => {
-    const outlook = computeGroupOutlook("A", results, nameOf, standingsWithThirds(7));
+    const outlook = computeGroupOutlook(
+      "A",
+      results,
+      nameOf,
+      standingsWithThirds(7),
+    );
     const a2 = team(outlook, "A2").thirdPlace!;
     expect(a2.estimate).toBe("eliminated");
     expect(a2.cutLinePoints).toBe(7);
@@ -188,6 +248,35 @@ describe("computeGroupOutlook — third place", () => {
     const a4 = team(computeGroupOutlook("A", sealed, nameOf), "A4");
     expect(a4.status).toBe("eliminated");
     expect(a4.thirdPlace).toBeUndefined();
+  });
+});
+
+describe("getTeamClinchInfo", () => {
+  it("detects a team that can clinch top 2 on matchday 2", () => {
+    // A1 has one win. A2 and A4 are on 3; A3 is stuck on 0 after two games.
+    // If A1 beats A2 in G28, only A4 can still catch A1, so A1 clinches top 2.
+    const results = resultsMap([
+      { matchId: "G01", homeScore: 1, awayScore: 0 }, // A1 beats A4
+      { matchId: "G02", homeScore: 1, awayScore: 0 }, // A2 beats A3
+      { matchId: "G25", homeScore: 0, awayScore: 1 }, // A4 beats A3
+    ]);
+
+    const info = getTeamClinchInfo("A", results);
+    expect(info.get("A1")?.alreadyThrough).toBe(false);
+    expect(info.get("A1")?.clinchByMatch.get("G28")).toEqual(["win"]);
+  });
+
+  it("marks a team as already through after clinching", () => {
+    const results = resultsMap([
+      { matchId: "G01", homeScore: 1, awayScore: 0 }, // A1 beats A4
+      { matchId: "G02", homeScore: 1, awayScore: 0 }, // A2 beats A3
+      { matchId: "G25", homeScore: 0, awayScore: 1 }, // A4 beats A3
+      { matchId: "G28", homeScore: 1, awayScore: 0 }, // A1 beats A2 and clinches
+    ]);
+
+    const info = getTeamClinchInfo("A", results);
+    expect(info.get("A1")?.alreadyThrough).toBe(true);
+    expect(info.get("A1")?.clinchByMatch.size).toBe(0);
   });
 });
 

@@ -1,8 +1,15 @@
-import React from "react";
+import React, { useMemo } from "react";
 import type { Match } from "../data/types";
 import { useApp } from "../state/AppContext";
 import { getTeamById } from "../data/teams";
+import { getTeamClinchInfo, type OwnResultOutlook } from "../logic/scenarios";
 import FlagIcon from "./FlagIcon";
+
+const RESULT_LABEL: Record<OwnResultOutlook["result"], string> = {
+  win: "Win",
+  draw: "Draw",
+  loss: "Lose",
+};
 
 interface Props {
   match: Match;
@@ -23,7 +30,7 @@ export default function MatchCard({
   showVenue = true,
   compact = false,
 }: Props) {
-  const { getTeamName, getResult, setScore } = useApp();
+  const { getTeamName, getResult, setScore, results } = useApp();
   const result = getResult(match.id);
 
   const homeTeam = getTeamById(match.homeTeamId);
@@ -43,7 +50,31 @@ export default function MatchCard({
 
   const homeScore = result?.homeScore ?? 0;
   const awayScore = result?.awayScore ?? 0;
-  const hasResult = result?.homeScore !== null || result?.awayScore !== null;
+  const hasResult =
+    result !== undefined &&
+    (result.homeScore !== null || result.awayScore !== null);
+
+  // Which team has already clinched or can clinch with a result in this match?
+  const clinchInfo = useMemo(() => {
+    if (!match.group || isKnockout || isPlaceholder || hasResult) return null;
+    const info = getTeamClinchInfo(match.group, results);
+
+    const describe = (
+      teamId: string,
+    ): "through" | "win" | "draw" | "win or draw" | null => {
+      const c = info.get(teamId);
+      if (!c) return null;
+      if (c.alreadyThrough) return "through";
+      const res = c.clinchByMatch.get(match.id);
+      if (!res || res.length === 0) return null;
+      if (res.length >= 2) return "win or draw";
+      return res[0];
+    };
+
+    const h = describe(match.homeTeamId);
+    const a = describe(match.awayTeamId);
+    return h || a ? { home: h, away: a } : null;
+  }, [match, isKnockout, isPlaceholder, hasResult, results]);
 
   const clearMatch = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -104,6 +135,29 @@ export default function MatchCard({
 
   const flagEmoji = (code: string) => <FlagIcon code={code} size={14} />;
 
+  const clinchBadge = (teamId: string) => {
+    const c = clinchInfo?.[teamId === match.homeTeamId ? "home" : "away"];
+    if (!c) return null;
+    if (c === "through") {
+      return (
+        <span
+          className="clinch-badge through"
+          title="Already qualified for R32"
+        >
+          ✓ Through
+        </span>
+      );
+    }
+    return (
+      <span
+        className="clinch-badge"
+        title={`Clinches R32 with ${RESULT_LABEL[c] ?? c}`}
+      >
+        🔒 {RESULT_LABEL[c] ?? c}
+      </span>
+    );
+  };
+
   if (compact) {
     return (
       <div
@@ -143,6 +197,7 @@ export default function MatchCard({
               <span className="fifa-rank">({homeTeam.ranking})</span>
             )}
           </span>
+          {clinchBadge(match.homeTeamId)}
           <div className="score-inputs compact-scores">
             <input
               type="number"
@@ -178,6 +233,7 @@ export default function MatchCard({
               <span className="fifa-rank">({awayTeam.ranking})</span>
             )}
           </span>
+          {clinchBadge(match.awayTeamId)}
         </div>
       </div>
     );
@@ -239,6 +295,7 @@ export default function MatchCard({
               <span className="fifa-rank">({homeTeam.ranking})</span>
             )}
           </span>
+          {clinchBadge(match.homeTeamId)}
         </span>
         <span className="match-score">
           <input
@@ -275,6 +332,7 @@ export default function MatchCard({
             )}
             {awayName}
           </span>
+          {clinchBadge(match.awayTeamId)}
           {flagEmoji(awayTeam?.fifaCode ?? "")}
         </span>
       </div>
