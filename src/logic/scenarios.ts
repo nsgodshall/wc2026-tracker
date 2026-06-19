@@ -1,4 +1,4 @@
-import type { Match, MatchResult, GroupName } from "../data/types";
+import type { Match, MatchResult, GroupName, GroupStanding } from "../data/types";
 import { GROUP_MATCHES } from "../data/schedule";
 import { getTeamsByGroup } from "../data/teams";
 import { rankTeams, lookupFromResults, type Score, type ScoreLookup } from "./standings";
@@ -6,18 +6,24 @@ import { rankTeams, lookupFromResults, type Score, type ScoreLookup } from "./st
 /**
  * "What each team needs" — group-stage clinching engine.
  *
- * Scope: the top-2 race WITHIN a group only. The cross-group "best 8 third
- * placed teams" cut is intentionally out of scope for now.
+ * Within-group status (won-group / clinched-top2 / alive / eliminated) is
+ * computed exactly: we enumerate every win/draw/loss combination of the
+ * remaining matches (at most 3^4 = 81) and, for each, construct the goal margins
+ * that are most and least favourable to the team. Because the favourable
+ * construction uses a large winning margin, the binding tiebreaker is
+ * points → goal difference → goals scored (a total order), so this yields the
+ * team's true best/worst achievable finishing position. (The only blind spot is
+ * the vanishingly rare case where teams tie on points AND GD AND GF and
+ * head-to-head decides — there the extreme construction avoids the tie, so it
+ * cannot mislead.)
  *
- * Status (won-group / clinched-top2 / alive / eliminated) is computed exactly:
- * we enumerate every win/draw/loss combination of the remaining matches
- * (at most 3^4 = 81) and, for each, construct the goal margins that are most
- * and least favourable to the team. Because the favourable construction uses a
- * large winning margin, the binding tiebreaker is points → goal difference →
- * goals scored (a total order), so this yields the team's true best/worst
- * achievable finishing position. (The only blind spot is the vanishingly rare
- * case where teams tie on points AND GD AND GF and head-to-head decides — there
- * the extreme construction avoids the tie, so it cannot mislead.)
+ * Third place: the top 2 of each group always advance; the 8 best third-placed
+ * teams across all 12 groups also advance. We treat a team as eliminated only
+ * when it cannot finish in the top THREE (the within-group part is exact). For a
+ * team that can finish 3rd we add a `thirdPlace` outlook: the points it could
+ * finish 3rd on, and — given the other groups' CURRENT standings (a snapshot,
+ * since those groups have games left too) — whether that would make the best-8
+ * cut. The snapshot is clearly labelled; it sharpens as the other groups finish.
  *
  * Goal-margin prose ("win by 2+") is only emitted on a team's final match,
  * where it is well defined, via a small realistic-scoreline scan.
@@ -37,10 +43,26 @@ export interface OwnResultOutlook {
   opponentId: string;
   result: OwnResult;
   verdict: VerdictKind;
+  /** Whether the verdict is about reaching the top 2 or (3rd-only teams) top 3. */
+  target: "top2" | "top3";
   /** For `possible`: other results that must also happen. */
   condition?: string;
   /** Final-matchday goal-margin advice, when meaningful. */
   marginText?: string;
+}
+
+/**
+ * The best-8 third-place path. `estimate` is a SNAPSHOT against the other
+ * groups' current standings — it moves as those groups play their remaining
+ * games. `minPoints`/`maxPoints` are the within-group exact range a team could
+ * finish 3rd on.
+ */
+export interface ThirdPlaceOutlook {
+  minPoints: number;
+  maxPoints: number;
+  estimate?: "qualifies" | "bubble" | "eliminated";
+  /** Points the 8th-best third currently has — roughly what's needed. */
+  cutLinePoints?: number;
 }
 
 export interface TeamOutlook {
@@ -52,6 +74,8 @@ export interface TeamOutlook {
   tiebreakUndecided: boolean;
   remainingForTeam: number;
   ownResults: OwnResultOutlook[];
+  /** Present when the team can still finish 3rd and isn't already through. */
+  thirdPlace?: ThirdPlaceOutlook;
 }
 
 export interface GroupOutlook {
@@ -77,6 +101,7 @@ export function computeGroupOutlook(
   group: GroupName,
   results: Map<string, MatchResult>,
   nameOf: NameOf,
+  allStandings?: Map<GroupName, GroupStanding[]>,
 ): GroupOutlook {
   const teamIds = getTeamsByGroup(group).map((t) => t.id);
   const groupMatches = GROUP_MATCHES.filter((m) => m.group === group);
@@ -87,6 +112,11 @@ export function computeGroupOutlook(
   const current = rankTeams(teamIds, groupMatches, base);
   const undecidedTeams = findUndecidedTeams(group, results);
 
+  // Other groups' current third-place points — the snapshot best-8 cut context.
+  const otherThirds = allStandings
+    ? otherGroupsThirdPoints(allStandings, group)
+    : null;
+
   const finalMatchday = remaining.length <= 2;
 
   const teams: TeamOutlook[] = current.standings.map((row) => {
@@ -95,34 +125,46 @@ export function computeGroupOutlook(
       (m) => m.homeTeamId === teamId || m.awayTeamId === teamId,
     );
 
-    const { status, minPosition, maxPosition } = classify(
-      teamId,
-      teamIds,
-      groupMatches,
-      remaining,
-      base,
-    );
+    const cls = classify(teamId, teamIds, groupMatches, remaining, base);
 
-    const ownResults = describeOwnResults(
-      teamId,
-      teamIds,
-      groupMatches,
-      remaining,
-      ownRemaining,
-      base,
-      finalMatchday,
-      nameOf,
-    );
+    // Top-2 contenders get top-2 verdicts; 3rd-only contenders get top-3 ones.
+    const threshold: 2 | 3 | 0 = cls.canTop2 ? 2 : cls.canThird ? 3 : 0;
+    const ownResults =
+      threshold === 0
+        ? []
+        : describeOwnResults(
+            teamId,
+            teamIds,
+            groupMatches,
+            remaining,
+            ownRemaining,
+            base,
+            finalMatchday,
+            threshold,
+            nameOf,
+          );
+
+    let thirdPlace: ThirdPlaceOutlook | undefined;
+    if (cls.status === "alive" && cls.canThird) {
+      thirdPlace = { minPoints: cls.minThirdPoints, maxPoints: cls.maxThirdPoints };
+      if (otherThirds) {
+        Object.assign(
+          thirdPlace,
+          thirdEstimate(cls.minThirdPoints, cls.maxThirdPoints, otherThirds),
+        );
+      }
+    }
 
     return {
       teamId,
       teamName: nameOf(teamId),
-      status,
-      minPosition,
-      maxPosition,
+      status: cls.status,
+      minPosition: cls.minPosition,
+      maxPosition: cls.maxPosition,
       tiebreakUndecided: undecidedTeams.has(teamId),
       remainingForTeam: ownRemaining.length,
       ownResults,
+      thirdPlace,
     };
   });
 
@@ -136,38 +178,37 @@ export function computeGroupOutlook(
 
 // --- Status classification ---------------------------------------------------
 
+interface Classification {
+  status: OutlookStatus;
+  minPosition: number;
+  maxPosition: number;
+  canTop2: boolean;
+  canThird: boolean;
+  /** Points range a team could finish exactly 3rd on (exact; margins don't change points). */
+  minThirdPoints: number;
+  maxThirdPoints: number;
+}
+
 function classify(
   teamId: string,
   teamIds: string[],
   groupMatches: Match[],
   remaining: Match[],
   base: ScoreLookup,
-): { status: OutlookStatus; minPosition: number; maxPosition: number } {
+): Classification {
   let canTop2 = false;
   let alwaysTop2 = true;
   let alwaysFirst = true;
+  let canThird = false;
   let minPosition = 4;
   let maxPosition = 1;
+  let minThirdPoints = Infinity;
+  let maxThirdPoints = -Infinity;
 
   for (const combo of enumerateOutcomes(remaining.length)) {
-    const best = positionFor(
-      teamId,
-      teamIds,
-      groupMatches,
-      remaining,
-      combo,
-      base,
-      "best",
-    );
-    const worst = positionFor(
-      teamId,
-      teamIds,
-      groupMatches,
-      remaining,
-      combo,
-      base,
-      "worst",
-    );
+    const bestRow = rowFor(teamId, teamIds, groupMatches, remaining, combo, base, "best");
+    const best = bestRow.position;
+    const worst = rowFor(teamId, teamIds, groupMatches, remaining, combo, base, "worst").position;
 
     if (best <= 2) canTop2 = true;
     if (worst > 2) alwaysTop2 = false;
@@ -175,21 +216,53 @@ function classify(
 
     minPosition = Math.min(minPosition, best);
     maxPosition = Math.max(maxPosition, worst);
+
+    // 3rd is reachable in this combo if 3 lies within the achievable range.
+    if (best <= 3 && worst >= 3) {
+      canThird = true;
+      // Points only depend on win/draw/loss, so bestRow.points is exact here.
+      minThirdPoints = Math.min(minThirdPoints, bestRow.points);
+      maxThirdPoints = Math.max(maxThirdPoints, bestRow.points);
+    }
   }
 
   let status: OutlookStatus;
-  if (!canTop2) status = "eliminated";
+  if (!canTop2 && !canThird) status = "eliminated";
   else if (alwaysFirst) status = "won-group";
   else if (alwaysTop2) status = "clinched-top2";
   else status = "alive";
 
-  return { status, minPosition, maxPosition };
+  return {
+    status,
+    minPosition,
+    maxPosition,
+    canTop2,
+    canThird,
+    minThirdPoints,
+    maxThirdPoints,
+  };
 }
 
 /**
- * Finishing position of `teamId` for a fixed win/draw/loss combo, with goal
- * margins constructed to be most (`best`) or least (`worst`) favourable.
+ * Standings row for `teamId` for a fixed win/draw/loss combo, with goal margins
+ * constructed to be most (`best`) or least (`worst`) favourable.
  */
+function rowFor(
+  teamId: string,
+  teamIds: string[],
+  groupMatches: Match[],
+  remaining: Match[],
+  combo: Outcome[],
+  base: ScoreLookup,
+  mode: "best" | "worst",
+): GroupStanding {
+  const overrides = new Map<string, Score>();
+  for (let i = 0; i < remaining.length; i++) {
+    overrides.set(remaining[i].id, buildScore(remaining[i], combo[i], teamId, mode));
+  }
+  return rowWith(teamIds, groupMatches, base, overrides, teamId);
+}
+
 function positionFor(
   teamId: string,
   teamIds: string[],
@@ -199,11 +272,7 @@ function positionFor(
   base: ScoreLookup,
   mode: "best" | "worst",
 ): number {
-  const overrides = new Map<string, Score>();
-  for (let i = 0; i < remaining.length; i++) {
-    overrides.set(remaining[i].id, buildScore(remaining[i], combo[i], teamId, mode));
-  }
-  return rankWith(teamIds, groupMatches, base, overrides, teamId);
+  return rowFor(teamId, teamIds, groupMatches, remaining, combo, base, mode).position;
 }
 
 /** Construct a scoreline for one match given its outcome and a focal team. */
@@ -246,6 +315,7 @@ function describeOwnResults(
   ownRemaining: Match[],
   base: ScoreLookup,
   finalMatchday: boolean,
+  threshold: 2 | 3,
   nameOf: NameOf,
 ): OwnResultOutlook[] {
   if (ownRemaining.length !== 1) {
@@ -258,6 +328,7 @@ function describeOwnResults(
   const others = remaining.filter((m) => m.id !== rm.id);
   const isHome = rm.homeTeamId === teamId;
   const opponentId = isHome ? rm.awayTeamId : rm.homeTeamId;
+  const target = threshold === 2 ? "top2" : "top3";
 
   const out: OwnResultOutlook[] = [];
 
@@ -274,11 +345,11 @@ function describeOwnResults(
       const best = positionFor(teamId, teamIds, groupMatches, remaining, combo, base, "best");
       const worst = positionFor(teamId, teamIds, groupMatches, remaining, combo, base, "worst");
 
-      if (best <= 2) {
+      if (best <= threshold) {
         possible = true;
         achieving.push(otherCombo);
       }
-      if (worst > 2) guaranteed = false;
+      if (worst > threshold) guaranteed = false;
     }
 
     let verdict: VerdictKind;
@@ -286,13 +357,14 @@ function describeOwnResults(
     else if (guaranteed) verdict = "guarantees";
     else verdict = "possible";
 
-    const outlook: OwnResultOutlook = { matchId: rm.id, opponentId, result, verdict };
+    const outlook: OwnResultOutlook = { matchId: rm.id, opponentId, result, verdict, target };
 
     if (verdict === "possible") {
       outlook.condition = necessaryCondition(others, achieving, teamId, nameOf);
     }
 
-    if (finalMatchday && verdict === "possible") {
+    // Goal-margin prose is only well defined for the top-2 race.
+    if (threshold === 2 && finalMatchday && verdict === "possible") {
       outlook.marginText = marginAdvice(
         teamId,
         teamIds,
@@ -452,7 +524,19 @@ function rivalDenial(
 
 // --- Ranking helpers ---------------------------------------------------------
 
-/** Rank with overrides layered on top of base results; return focal position. */
+/** Rank with overrides layered on top of base results; return focal row. */
+function rowWith(
+  teamIds: string[],
+  groupMatches: Match[],
+  base: ScoreLookup,
+  overrides: Map<string, Score>,
+  focalId: string,
+): GroupStanding {
+  const lookup: ScoreLookup = (id) => overrides.get(id) ?? base(id);
+  const { standings } = rankTeams(teamIds, groupMatches, lookup);
+  return standings.find((s) => s.teamId === focalId)!;
+}
+
 function rankWith(
   teamIds: string[],
   groupMatches: Match[],
@@ -460,9 +544,7 @@ function rankWith(
   overrides: Map<string, Score>,
   focalId: string,
 ): number {
-  const lookup: ScoreLookup = (id) => overrides.get(id) ?? base(id);
-  const { standings } = rankTeams(teamIds, groupMatches, lookup);
-  return standings.find((s) => s.teamId === focalId)!.position;
+  return rowWith(teamIds, groupMatches, base, overrides, focalId).position;
 }
 
 function positionWithScores(
@@ -474,6 +556,47 @@ function positionWithScores(
 ): number {
   const overrides = new Map(scores);
   return rankWith(teamIds, groupMatches, base, overrides, focalId);
+}
+
+// --- Third-place (best-8) snapshot -------------------------------------------
+
+/** Current third-place points for every group except the one being analysed. */
+function otherGroupsThirdPoints(
+  allStandings: Map<GroupName, GroupStanding[]>,
+  group: GroupName,
+): number[] {
+  const pts: number[] = [];
+  for (const [g, standings] of allStandings) {
+    if (g === group) continue;
+    const third = standings[2];
+    if (third) pts.push(third.points);
+  }
+  return pts;
+}
+
+/**
+ * Estimate, against the other groups' current third-place points, whether a
+ * team finishing 3rd with a points total in [minP, maxP] would make the best-8
+ * cut. Eight of twelve thirds advance, so a team is in if at most 7 other
+ * thirds are strictly above it. Comparison is on points only (a deliberate
+ * simplification — GD/GF break the real ties), so "eliminated" is conservative
+ * and "qualifies" is optimistic.
+ */
+function thirdEstimate(
+  minP: number,
+  maxP: number,
+  others: number[],
+): { estimate: "qualifies" | "bubble" | "eliminated"; cutLinePoints: number } {
+  const sorted = [...others].sort((a, b) => b - a);
+  const cutLinePoints = sorted.length >= 8 ? sorted[7] : 0;
+  const qualifyAt = (p: number) => others.filter((o) => o > p).length <= 7;
+
+  let estimate: "qualifies" | "bubble" | "eliminated";
+  if (!qualifyAt(maxP)) estimate = "eliminated";
+  else if (qualifyAt(minP)) estimate = "qualifies";
+  else estimate = "bubble";
+
+  return { estimate, cutLinePoints };
 }
 
 // --- Small utilities ---------------------------------------------------------

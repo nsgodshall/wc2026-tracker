@@ -12,10 +12,7 @@ interface Props {
   group: GroupName;
 }
 
-const STATUS_META: Record<
-  OutlookStatus,
-  { label: string; cls: string }
-> = {
+const STATUS_META: Record<OutlookStatus, { label: string; cls: string }> = {
   "won-group": { label: "Won group 🏆", cls: "qs-in" },
   "clinched-top2": { label: "Through ✓", cls: "qs-in" },
   alive: { label: "Still alive", cls: "qs-third" },
@@ -35,11 +32,11 @@ const RESULT_LABEL: Record<OwnResultOutlook["result"], string> = {
 };
 
 export default function QualificationScenarios({ group }: Props) {
-  const { results, getTeamName } = useApp();
+  const { results, getTeamName, allStandings } = useApp();
 
   const outlook = useMemo(
-    () => computeGroupOutlook(group, results, getTeamName),
-    [group, results, getTeamName],
+    () => computeGroupOutlook(group, results, getTeamName, allStandings),
+    [group, results, getTeamName, allStandings],
   );
 
   // Nothing useful to show before any match is played.
@@ -58,7 +55,9 @@ export default function QualificationScenarios({ group }: Props) {
       {outlook.teams.map((t) => {
         const meta = STATUS_META[t.status];
         const opponentName =
-          t.ownResults.length > 0 ? getTeamName(t.ownResults[0].opponentId) : null;
+          t.ownResults.length > 0
+            ? getTeamName(t.ownResults[0].opponentId)
+            : null;
         return (
           <div key={t.teamId} className="qs-team-block">
             <div className="qs-row">
@@ -73,12 +72,23 @@ export default function QualificationScenarios({ group }: Props) {
 
             {opponentName && (
               <div className="qs-detail">
-                <div className="qs-detail-head">Last game vs {opponentName}</div>
+                <div className="qs-detail-head">
+                  Last game vs {opponentName}
+                  {t.ownResults[0]?.target && (
+                    <span className="qs-target-tag">
+                      {t.ownResults[0].target === "top2"
+                        ? "top 2"
+                        : "3rd place"}
+                    </span>
+                  )}
+                </div>
                 {t.ownResults.map((r) => {
                   const v = VERDICT_META[r.verdict];
                   return (
                     <div key={r.result} className="qs-line">
-                      <span className="qs-result">{RESULT_LABEL[r.result]}</span>
+                      <span className="qs-result">
+                        {RESULT_LABEL[r.result]}
+                      </span>
                       <span className={`qs-badge ${v.cls}`}>{v.label}</span>
                       {r.condition && (
                         <span className="qs-cond">if {r.condition}</span>
@@ -92,9 +102,46 @@ export default function QualificationScenarios({ group }: Props) {
               </div>
             )}
 
+            {t.thirdPlace && (
+              <div className="qs-third-place">
+                <div className="qs-tp-range">
+                  If 3rd: {t.thirdPlace.minPoints}
+                  {t.thirdPlace.minPoints !== t.thirdPlace.maxPoints
+                    ? `–${t.thirdPlace.maxPoints}`
+                    : ""}{" "}
+                  pts
+                </div>
+                {t.thirdPlace.estimate && (
+                  <div className="qs-tp-estimate">
+                    <span
+                      className={`qs-badge ${
+                        t.thirdPlace.estimate === "qualifies"
+                          ? "qs-in"
+                          : t.thirdPlace.estimate === "bubble"
+                            ? "qs-third"
+                            : "qs-out"
+                      }`}
+                    >
+                      {t.thirdPlace.estimate === "qualifies"
+                        ? "Likely through"
+                        : t.thirdPlace.estimate === "bubble"
+                          ? "On the bubble"
+                          : "Likely out"}
+                    </span>
+                    {t.thirdPlace.cutLinePoints !== undefined && (
+                      <span className="qs-cond">
+                        ~{t.thirdPlace.cutLinePoints} pts 8th-best
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
             {t.tiebreakUndecided && (
               <div className="qs-note">
-                Level on all tiebreakers — decided by fair play / drawing of lots.
+                Level on all tiebreakers — decided by fair play / drawing of
+                lots.
               </div>
             )}
           </div>
