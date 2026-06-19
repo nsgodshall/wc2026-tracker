@@ -1028,6 +1028,7 @@ tr {
 
 /* Grid-based standings (replaces <table>) */
 .group-table-grid {
+    position: relative;
     width: 100%;
     font-size: 0.78rem;
 }
@@ -1653,6 +1654,89 @@ tr {
 }
 
 .qs-out {
+    background: var(--danger-bg);
+    color: var(--danger);
+}
+
+.qs-team-block {
+    padding: 0.5rem 0;
+    border-top: 1px solid var(--border);
+}
+
+.qs-team-block:first-of-type {
+    border-top: none;
+}
+
+.qs-range {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+}
+
+.qs-detail {
+    margin: 0.4rem 0 0.1rem 0.25rem;
+    padding-left: 0.6rem;
+    border-left: 2px solid var(--border);
+}
+
+.qs-detail-head {
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    margin-bottom: 0.25rem;
+}
+
+.qs-line {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.18rem 0;
+    font-size: 0.78rem;
+    flex-wrap: wrap;
+}
+
+.qs-result {
+    flex: 0 0 2.6rem;
+    font-weight: 600;
+    color: var(--text);
+}
+
+.qs-cond {
+    font-size: 0.74rem;
+    color: var(--text-muted);
+}
+
+.qs-note {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    font-style: italic;
+    margin-top: 0.35rem;
+}
+
+/* Compact status pill shown on the standings group tables */
+.gt-status {
+    display: inline-block;
+    margin-left: 0.4rem;
+    padding: 0.05rem 0.35rem;
+    border-radius: 4px;
+    font-size: 0.62rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    vertical-align: middle;
+}
+
+.gt-status.qs-in {
+    background: var(--accent-bg);
+    color: var(--accent);
+}
+
+.gt-status.qs-third {
+    background: var(--warning-bg);
+    color: var(--warning);
+}
+
+.gt-status.qs-out {
     background: var(--danger-bg);
     color: var(--danger);
 }

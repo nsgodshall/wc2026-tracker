@@ -1,95 +1,109 @@
 import { useMemo } from "react";
 import type { GroupName } from "../data/types";
 import { useApp } from "../state/AppContext";
-import { computeGroupStandings } from "../logic/standings";
-import { GROUP_MATCHES } from "../data/schedule";
-import { getTeamsByGroup } from "../data/teams";
+import {
+  computeGroupOutlook,
+  type OutlookStatus,
+  type OwnResultOutlook,
+  type VerdictKind,
+} from "../logic/scenarios";
 
 interface Props {
   group: GroupName;
 }
 
-type OutcomeLabel = "Win" | "Draw" | "Lose";
+const STATUS_META: Record<
+  OutlookStatus,
+  { label: string; cls: string }
+> = {
+  "won-group": { label: "Won group 🏆", cls: "qs-in" },
+  "clinched-top2": { label: "Through ✓", cls: "qs-in" },
+  alive: { label: "Still alive", cls: "qs-third" },
+  eliminated: { label: "Eliminated ✗", cls: "qs-out" },
+};
 
-interface TeamScenario {
-  teamId: string;
-  teamName: string;
-  matchId: string;
-  outcomes: { label: OutcomeLabel; position: number }[];
-}
+const VERDICT_META: Record<VerdictKind, { label: string; cls: string }> = {
+  guarantees: { label: "Through", cls: "qs-in" },
+  possible: { label: "Maybe", cls: "qs-third" },
+  impossible: { label: "Out", cls: "qs-out" },
+};
+
+const RESULT_LABEL: Record<OwnResultOutlook["result"], string> = {
+  win: "Win",
+  draw: "Draw",
+  loss: "Lose",
+};
 
 export default function QualificationScenarios({ group }: Props) {
   const { results, getTeamName } = useApp();
 
-  const scenarios = useMemo((): TeamScenario[] => {
-    const groupMatches = GROUP_MATCHES.filter((m) => m.group === group);
-    const remaining = groupMatches.filter((m) => {
-      const r = results.get(m.id);
-      return !r || r.homeScore === null || r.awayScore === null;
-    });
+  const outlook = useMemo(
+    () => computeGroupOutlook(group, results, getTeamName),
+    [group, results, getTeamName],
+  );
 
-    if (remaining.length === 0) return [];
-
-    const groupTeams = getTeamsByGroup(group);
-
-    return remaining.flatMap((match) => {
-      const teamsInMatch = groupTeams.filter(
-        (t) => t.id === match.homeTeamId || t.id === match.awayTeamId,
-      );
-
-      return teamsInMatch.map((team) => {
-        const isHome = team.id === match.homeTeamId;
-        const outcomeDefinitions: [OutcomeLabel, number, number][] = [
-          ["Win", 1, 0],
-          ["Draw", 0, 0],
-          ["Lose", 0, 1],
-        ];
-
-        const outcomes = outcomeDefinitions.map(([label, homeGoals, awayGoals]) => {
-          const simResults = new Map(results);
-          simResults.set(match.id, {
-            matchId: match.id,
-            homeScore: isHome ? homeGoals : awayGoals,
-            awayScore: isHome ? awayGoals : homeGoals,
-          });
-          const standings = computeGroupStandings(group, simResults);
-          const row = standings.find((r) => r.teamId === team.id)!;
-          return { label, position: row.position };
-        });
-
-        return {
-          teamId: team.id,
-          teamName: getTeamName(team.id),
-          matchId: match.id,
-          outcomes,
-        };
-      });
-    });
-  }, [results, group, getTeamName]);
-
-  if (scenarios.length === 0) return null;
+  // Nothing useful to show before any match is played.
+  const anyDecided = outlook.teams.some(
+    (t) => t.status !== "alive" || t.ownResults.length > 0,
+  );
 
   return (
     <div className="qual-scenarios">
       <div className="qs-title">What each team needs</div>
-      {scenarios.map((s) => (
-        <div key={`${s.teamId}-${s.matchId}`} className="qs-row">
-          <span className="qs-team">{s.teamName}</span>
-          <span className="qs-outcomes">
-            {s.outcomes.map((o) => {
-              const cls =
-                o.position <= 2 ? "qs-in" : o.position === 3 ? "qs-third" : "qs-out";
-              const symbol =
-                o.position <= 2 ? "✓" : o.position === 3 ? "3rd" : "✗";
-              return (
-                <span key={o.label} className={`qs-badge ${cls}`}>
-                  {o.label}: {symbol}
-                </span>
-              );
-            })}
-          </span>
+      {!anyDecided && (
+        <div className="qs-note">
+          Enter some results to see who can still qualify.
         </div>
-      ))}
+      )}
+      {outlook.teams.map((t) => {
+        const meta = STATUS_META[t.status];
+        const opponentName =
+          t.ownResults.length > 0 ? getTeamName(t.ownResults[0].opponentId) : null;
+        return (
+          <div key={t.teamId} className="qs-team-block">
+            <div className="qs-row">
+              <span className="qs-team">{t.teamName}</span>
+              <span className={`qs-badge ${meta.cls}`}>{meta.label}</span>
+              {t.status === "alive" && t.minPosition !== t.maxPosition && (
+                <span className="qs-range">
+                  can finish {ordinal(t.minPosition)}–{ordinal(t.maxPosition)}
+                </span>
+              )}
+            </div>
+
+            {opponentName && (
+              <div className="qs-detail">
+                <div className="qs-detail-head">Last game vs {opponentName}</div>
+                {t.ownResults.map((r) => {
+                  const v = VERDICT_META[r.verdict];
+                  return (
+                    <div key={r.result} className="qs-line">
+                      <span className="qs-result">{RESULT_LABEL[r.result]}</span>
+                      <span className={`qs-badge ${v.cls}`}>{v.label}</span>
+                      {r.condition && (
+                        <span className="qs-cond">if {r.condition}</span>
+                      )}
+                      {r.marginText && (
+                        <span className="qs-cond">{r.marginText}</span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {t.tiebreakUndecided && (
+              <div className="qs-note">
+                Level on all tiebreakers — decided by fair play / drawing of lots.
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
+}
+
+function ordinal(n: number): string {
+  return n === 1 ? "1st" : n === 2 ? "2nd" : n === 3 ? "3rd" : `${n}th`;
 }

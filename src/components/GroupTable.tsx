@@ -1,7 +1,8 @@
-import { useRef, useLayoutEffect } from "react";
+import { useRef, useLayoutEffect, useMemo } from "react";
 import type { GroupName, GroupStanding } from "../data/types";
 import { useApp } from "../state/AppContext";
 import { getTeamById } from "../data/teams";
+import { computeGroupOutlook, type OutlookStatus } from "../logic/scenarios";
 import FlagIcon from "./FlagIcon";
 import { usePrevious } from "../state/usePrevious";
 
@@ -9,9 +10,25 @@ interface Props {
   group: GroupName;
 }
 
+const STATUS_PILL: Record<OutlookStatus, { label: string; cls: string } | null> = {
+  "won-group": { label: "Won", cls: "qs-in" },
+  "clinched-top2": { label: "Through", cls: "qs-in" },
+  alive: null, // no pill — the default, undecided state
+  eliminated: { label: "Out", cls: "qs-out" },
+};
+
 export default function GroupTable({ group }: Props) {
-  const { allStandings, getTeamName, thirdPlaceRanks } = useApp();
+  const { allStandings, getTeamName, thirdPlaceRanks, results } = useApp();
   const standings = allStandings.get(group) ?? [];
+
+  // Per-team qualification status (top-2 race) for the status pills.
+  const statusByTeam = useMemo(() => {
+    const map = new Map<string, OutlookStatus>();
+    for (const t of computeGroupOutlook(group, results, getTeamName).teams) {
+      map.set(t.teamId, t.status);
+    }
+    return map;
+  }, [group, results, getTeamName]);
   const prevStandings = usePrevious(standings);
   const rowRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
@@ -37,10 +54,13 @@ export default function GroupTable({ group }: Props) {
   const oldY = useRef<Map<string, number>>(new Map());
 
   useLayoutEffect(() => {
-    // Measure current positions of all rows
+    // Measure current positions of all rows, relative to the table container.
+    // Using offsetTop (not getBoundingClientRect().top) keeps the FLIP immune to
+    // page scroll and layout shifts above the table — otherwise every row gets the
+    // same delta and the whole table appears to slide.
     const currentY = new Map<string, number>();
     for (const [teamId, el] of rowRefs.current) {
-      currentY.set(teamId, el.getBoundingClientRect().top);
+      currentY.set(teamId, el.offsetTop);
     }
 
     // For rows that changed position, apply a FLIP transform
@@ -122,6 +142,12 @@ export default function GroupTable({ group }: Props) {
                 <span className="fifa-rank">
                   ({getTeamById(row.teamId)?.ranking})
                 </span>
+                {(() => {
+                  const pill = STATUS_PILL[statusByTeam.get(row.teamId) ?? "alive"];
+                  return pill ? (
+                    <span className={`gt-status ${pill.cls}`}>{pill.label}</span>
+                  ) : null;
+                })()}
               </span>
               <span className="gt-col">
                 <AnimatedValue
