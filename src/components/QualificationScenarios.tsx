@@ -118,6 +118,7 @@ export default function QualificationScenarios({ group }: Props) {
     [allStandings, thirdPlaceRanks, getTeamName],
   );
   const anyPlayed = groupMatches.some((m) => hasCompleteResult(m.id, results));
+  const md2Complete = isMd2Complete(groupMatches, results);
   const hasClinchOpportunity = [...clinchInfo.values()].some(
     (c) => c.clinchByMatch.size > 0,
   );
@@ -176,7 +177,9 @@ export default function QualificationScenarios({ group }: Props) {
             : null;
         const statusLine = settledStatusLine(t);
         const showThirdPlace = shouldShowThirdPlace(t, outlook.finalMatchday);
-        const r32Lines = r32ProjectionLines(t, group, r32Projection);
+        const r32Lines = md2Complete
+          ? r32ProjectionLines(t, group, r32Projection)
+          : [];
 
         return (
           <div key={t.teamId} className="qs-team-block">
@@ -184,7 +187,7 @@ export default function QualificationScenarios({ group }: Props) {
               <span className="qs-team">
                 <FlagIcon
                   code={getTeamById(t.teamId)?.fifaCode ?? ""}
-                  size={14}
+                  size={18}
                 />
                 <span className="qs-team-name-text">{t.teamName}</span>
               </span>
@@ -358,6 +361,19 @@ function hasCompleteResult(
 ): boolean {
   const result = results.get(matchId);
   return !!result && result.homeScore !== null && result.awayScore !== null;
+}
+
+function isMd2Complete(
+  groupMatches: Match[],
+  results: Map<string, MatchResult>,
+): boolean {
+  const firstFourMatches = [...groupMatches]
+    .sort((a, b) => matchSortKey(a).localeCompare(matchSortKey(b)))
+    .slice(0, 4);
+  return (
+    firstFourMatches.length === 4 &&
+    firstFourMatches.every((match) => hasCompleteResult(match.id, results))
+  );
 }
 
 function buildR32Projection(

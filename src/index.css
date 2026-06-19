@@ -1751,6 +1751,10 @@ tr {
     overflow: hidden;
 }
 
+.qs-team > .flag-icon {
+    flex: 0 0 auto;
+}
+
 .qs-team-name-text {
     overflow: hidden;
     text-overflow: ellipsis;

@@ -4,7 +4,7 @@ import { ALL_GROUPS } from "../data/teams";
 import MatchCard from "./MatchCard";
 import GroupTable from "./GroupTable";
 import QualificationScenarios from "./QualificationScenarios";
-import type { GroupName } from "../data/types";
+import type { GroupName, Match } from "../data/types";
 
 export default function ScheduleView() {
   const [selectedGroup, setSelectedGroup] = useState<GroupName | null>(null);
@@ -27,6 +27,9 @@ export default function ScheduleView() {
       const existing = map.get(m.date) ?? [];
       existing.push(m);
       map.set(m.date, existing);
+    }
+    for (const matches of map.values()) {
+      matches.sort((a, b) => matchStartKey(a).localeCompare(matchStartKey(b)));
     }
     return map;
   }, [selectedGroup, selectedDate]);
@@ -151,4 +154,8 @@ export default function ScheduleView() {
         ))}
     </div>
   );
+}
+
+function matchStartKey(match: Match): string {
+  return `${match.date}T${match.time ?? "99:99"}-${match.id}`;
 }

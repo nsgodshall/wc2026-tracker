@@ -9,7 +9,7 @@ import type { Match } from "./types";
  *   MD2: 1v3, 4v2  (where 4v2 = position 4 vs position 2)
  *   MD3: 4v1, 2v3
  */
-export const GROUP_MATCHES: Match[] = [
+const GROUP_MATCHES_UNSORTED: Match[] = [
   // ===== MD1: June 11–17 =====
 
   // Jun 11 – Group A
@@ -842,3 +842,11 @@ export const GROUP_MATCHES: Match[] = [
     round: "group",
   }, // Croatia v Ghana
 ];
+
+export const GROUP_MATCHES: Match[] = [...GROUP_MATCHES_UNSORTED].sort((a, b) =>
+  groupMatchStartKey(a).localeCompare(groupMatchStartKey(b)),
+);
+
+function groupMatchStartKey(match: Match): string {
+  return `${match.date}T${match.time ?? "99:99"}-${match.id}`;
+}
