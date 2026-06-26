@@ -1,5 +1,5 @@
 import type { GroupStanding, GroupName } from "../data/types";
-import { ALL_GROUPS } from "../data/teams";
+import { ALL_GROUPS, TEAMS } from "../data/teams";
 
 /**
  * Identifies the best 8 third-place finishers across all 12 groups.
@@ -7,8 +7,8 @@ import { ALL_GROUPS } from "../data/teams";
  *   1. Points
  *   2. Goal difference
  *   3. Goals scored
- *   4. Fair play points
- *   5. Drawing of lots
+ *   4. Fair play points (fewer deductions = better)
+ *   5. FIFA world ranking (lower = better, as a deterministic fallback)
  */
 export interface ThirdPlaceRank {
   teamId: string;
@@ -18,6 +18,15 @@ export interface ThirdPlaceRank {
   points: number;
   goalDiff: number;
   goalsFor: number;
+  fairPlayPts: number;
+  /** FIFA world ranking (lower = better). Used as the final deterministic tiebreaker. */
+  fifaRanking: number;
+}
+
+/** Look up a team's FIFA world ranking from the static TEAMS data. */
+function getFifaRanking(teamId: string): number {
+  const team = TEAMS.find((t) => t.id === teamId);
+  return team?.ranking ?? 999;
 }
 
 export function computeThirdPlaceRanking(
@@ -38,15 +47,23 @@ export function computeThirdPlaceRanking(
       points: third.points,
       goalDiff: third.goalDiff,
       goalsFor: third.goalsFor,
+      fairPlayPts: third.fairPlayPts,
+      fifaRanking: getFifaRanking(third.teamId),
     });
   }
 
   // Sort by criteria across groups
   thirds.sort((a, b) => {
+    // 1. Points (higher = better)
     if (a.points !== b.points) return b.points - a.points;
+    // 2. Goal difference (higher = better)
     if (a.goalDiff !== b.goalDiff) return b.goalDiff - a.goalDiff;
+    // 3. Goals scored (higher = better)
     if (a.goalsFor !== b.goalsFor) return b.goalsFor - a.goalsFor;
-    // fair play and drawing of lots not implemented
+    // 4. Fair play points (lower = better; fewer card deductions)
+    if (a.fairPlayPts !== b.fairPlayPts) return a.fairPlayPts - b.fairPlayPts;
+    // 5. FIFA world ranking (lower rank number = better)
+    if (a.fifaRanking !== b.fifaRanking) return a.fifaRanking - b.fifaRanking;
     return 0;
   });
 

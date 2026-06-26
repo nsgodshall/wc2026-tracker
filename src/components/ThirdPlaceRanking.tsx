@@ -21,7 +21,7 @@ export default function ThirdPlaceRanking() {
           <li>Goal difference</li>
           <li>Goals scored</li>
           <li>Fair play points (fewer deductions = better)</li>
-          <li>Latest FIFA ranking</li>
+          <li>FIFA world ranking (lower rank = better)</li>
         </ol>
         <p className="tpr-note">
           The 8 qualifying 3rd-place teams are then allocated to specific Round
@@ -39,6 +39,7 @@ export default function ThirdPlaceRanking() {
             <th>Pts</th>
             <th>GD</th>
             <th>GF</th>
+            <th>FP</th>
             <th>Status</th>
           </tr>
         </thead>
@@ -71,6 +72,7 @@ export default function ThirdPlaceRanking() {
                 {tpr.goalDiff}
               </td>
               <td>{tpr.goalsFor}</td>
+              <td>{tpr.fairPlayPts}</td>
               <td>
                 <span
                   className={`status-badge ${tpr.qualifies ? "qualifies" : "out"}`}
